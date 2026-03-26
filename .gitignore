@@ -3,6 +3,9 @@ target/
 dependency-reduced-pom.xml
 buildNumber.properties
 
+# Build output (use Release for distribution)
+dist/
+
 # IDE
 .idea/
 *.iml

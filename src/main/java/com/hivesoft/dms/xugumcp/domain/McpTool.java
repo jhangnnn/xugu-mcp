@@ -1,29 +1,58 @@
 package com.hivesoft.dms.xugumcp.domain;
 
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.ArrayList;
 
 /**
  * MCP 工具定义
+ * 符合 JSON Schema 格式
  */
 public class McpTool {
     private String name;
     private String description;
-    private List<McpToolInput> inputSchema;
+    private Object inputSchema;  // JSON Schema 格式的对象
 
     public McpTool() {}
 
-    public McpTool(String name, String description, List<McpToolInput> inputSchema) {
+    public McpTool(String name, String description, List<McpToolInput> inputs) {
         this.name = name;
         this.description = description;
-        this.inputSchema = inputSchema;
+        this.inputSchema = buildJsonSchema(inputs);
+    }
+
+    private Map<String, Object> buildJsonSchema(List<McpToolInput> inputs) {
+        Map<String, Object> schema = new LinkedHashMap<>();
+        schema.put("type", "object");
+        schema.put("properties", new LinkedHashMap<String, Object>());
+        List<String> required = new ArrayList<>();
+
+        if (inputs != null) {
+            for (McpToolInput input : inputs) {
+                Map<String, Object> prop = new LinkedHashMap<>();
+                prop.put("type", input.getType());
+                prop.put("description", input.getDescription());
+                ((Map<String, Object>) schema.get("properties")).put(input.getName(), prop);
+                if (input.isRequired()) {
+                    required.add(input.getName());
+                }
+            }
+        }
+
+        if (!required.isEmpty()) {
+            schema.put("required", required);
+        }
+
+        return schema;
     }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-    public List<McpToolInput> getInputSchema() { return inputSchema; }
-    public void setInputSchema(List<McpToolInput> inputSchema) { this.inputSchema = inputSchema; }
+    public Object getInputSchema() { return inputSchema; }
+    public void setInputSchema(Object inputSchema) { this.inputSchema = inputSchema; }
 
     /**
      * 工具输入参数定义

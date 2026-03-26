@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Map;
 
 /**
  * MCP STDIO 服务器
@@ -18,12 +19,20 @@ public class McpStdioServer {
 
     private static final Logger logger = LoggerFactory.getLogger(McpStdioServer.class);
 
-    private final McpRequestHandler handler;
+    private McpRequestHandler handler;
+    private boolean configLoaded = false;
 
     public McpStdioServer() {
-        XuGuConfig config = XuGuConfig.load();
-        this.handler = new McpRequestHandler(config);
-        logger.info("MCP Server initialized");
+        try {
+            XuGuConfig config = XuGuConfig.load();
+            this.handler = new McpRequestHandler(config);
+            this.configLoaded = true;
+            logger.info("MCP Server initialized with database connection");
+        } catch (Exception e) {
+            logger.warn("Failed to initialize database connection: {}. Server will start but database operations will fail.", e.getMessage());
+            this.handler = new McpRequestHandler(null);
+            this.configLoaded = false;
+        }
     }
 
     public void start() {
@@ -43,6 +52,43 @@ public class McpStdioServer {
 
                 try {
                     McpRequest request = JSON.parseObject(line, McpRequest.class);
+
+                    // 处理 initialize 请求 - 此时可能还没有数据库配置
+                    if (request.getMethod().equals("initialize")) {
+                        Map<String, Object> result = new java.util.LinkedHashMap<>();
+                        result.put("protocolVersion", "2024-11-05");
+                        result.put("capabilities", Map.of("tools", Map.of()));
+                        result.put("serverInfo", Map.of("name", "xugu-mcp", "version", "1.0"));
+
+                        McpResponse response = McpResponse.success(result, request.getId());
+                        String responseJson = JSON.toJSONString(response);
+                        writer.write(responseJson);
+                        writer.newLine();
+                        writer.flush();
+                        logger.debug("Sent: {}", responseJson);
+                        continue;
+                    }
+
+                    // 处理 tools/list 请求
+                    if (request.getMethod().equals("tools/list")) {
+                        McpResponse response = handler.handle(request);
+                        String responseJson = JSON.toJSONString(response);
+                        writer.write(responseJson);
+                        writer.newLine();
+                        writer.flush();
+                        logger.debug("Sent: {}", responseJson);
+                        continue;
+                    }
+
+                    // 其他请求需要数据库连接
+                    if (!configLoaded) {
+                        McpResponse errorResponse = McpResponse.error(-32603, "Database not configured. Please set environment variables or config file.", request.getId());
+                        writer.write(JSON.toJSONString(errorResponse));
+                        writer.newLine();
+                        writer.flush();
+                        continue;
+                    }
+
                     McpResponse response = handler.handle(request);
 
                     String responseJson = JSON.toJSONString(response);

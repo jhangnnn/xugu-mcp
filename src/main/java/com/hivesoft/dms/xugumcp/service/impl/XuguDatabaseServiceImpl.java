@@ -20,10 +20,15 @@ public class XuguDatabaseServiceImpl implements DatabaseService {
 
     public XuguDatabaseServiceImpl(XuGuConfig config) {
         this.config = config;
-        initConnection();
+        if (config != null) {
+            initConnection();
+        }
     }
 
     private void initConnection() {
+        if (config == null) {
+            return;
+        }
         try {
             Class.forName(config.getDriver());
             Properties props = new Properties();
@@ -43,6 +48,9 @@ public class XuguDatabaseServiceImpl implements DatabaseService {
 
     private Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
+            if (config == null) {
+                throw new SQLException("Database not configured. Please set environment variables.");
+            }
             initConnection();
         }
         return connection;
