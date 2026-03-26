@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "xugu": {
+      "command": "java",
+      "args": ["-Dfile.encoding=UTF-8", "-jar", "xugu-mcp-1.0.jar"],
+      "env": {
+        "XUGU_HOST": "your-host",
+        "XUGU_PORT": "5138",
+        "XUGU_DATABASE": "your-database",
+        "XUGU_USERNAME": "your-username",
+        "XUGU_PASSWORD": "your-password"
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+server:
+  port: 8999
+
+database:
+  # 请通过环境变量配置:
+  # XUGU_URL      - 完整 JDBC URL
+  # XUGU_USERNAME - 用户名
+  # XUGU_PASSWORD - 密码
+  driver: com.xugu.cloudjdbc.Driver
+  pool-size: 5
+
+mcp:
+  transport: stdio
